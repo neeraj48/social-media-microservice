@@ -49,6 +49,7 @@ const sensitiveRateLimit = RateLimit(sensitiveRateLimitOptions);
 //apply sensitive rate limit to routes
 app.use("/api/auth/register", sensitiveRateLimit);
 app.use("/api/auth/login", sensitiveRateLimit);
+app.use("/api/auth/refresh-token", sensitiveRateLimit);
 
 // routes
 app.use("/api/auth", routes);
