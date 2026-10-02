@@ -6,6 +6,7 @@ import proxy from "express-http-proxy";
 import logger from "./utils/logger.js";
 import { rateLimit as createRateLimit } from "express-rate-limit";
 import errorHandler from "./middleware/errorHandler.js";
+import { validateToken } from "./middleware/authMiddleware.js";
 import { RedisStore } from "rate-limit-redis";
 
 const app = express();
@@ -83,12 +84,35 @@ app.use(
   }),
 );
 
+//setting proxy for post service
+app.use(
+  "/v1/posts",
+  validateToken,
+  proxy(process.env.POST_SERVICE_URL, {
+    ...proxyOptions,
+    proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+      proxyReqOpts.headers["content-Type"] = "application/json";
+      proxyReqOpts.headers["x-user-id"] = srcReq?.user?.userId;
+      return proxyReqOpts;
+    },
+    userReqDecorator: (proxyReq, proxyReqData, userReq, userRes) => {
+      logger.info(
+        `Proxying request to post service: ${proxyReq.method} ${userReq.originalUrl}`,
+      );
+      return proxyReqData;
+    },
+  }),
+);
+
 app.use(errorHandler);
 
 app.listen(PORT, () => {
   logger.info(`API Gateway running on port ${PORT}`);
   logger.info(
     `Identity service running on port at ${process.env.IDENTITY_SERVICE_URL}`,
+  );
+  logger.info(
+    `Post service running on port at ${process.env.POST_SERVICE_URL}`,
   );
   logger.info(`Redis URL: ${process.env.REDIS_URL}`);
 });
