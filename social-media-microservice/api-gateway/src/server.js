@@ -8,6 +8,7 @@ import { rateLimit as createRateLimit } from "express-rate-limit";
 import errorHandler from "./middleware/errorHandler.js";
 import { validateToken } from "./middleware/authMiddleware.js";
 import { RedisStore } from "rate-limit-redis";
+import Redis from "ioredis";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,20 +17,16 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-// const redisClient = new RedisStore(process.env.REDIS_URL);
-
-// const rateLimitRedis = new RateLimitRedis({
-//   storeClient: redisClient,
-//   keyprefix: "middleware",
-//   point: 10,
-//   duration: 1,
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   max: 5, // limit each IP to 5 requests per windowMs
-// });
+const redisClient = new Redis(
+  process.env.REDIS_URL || "redis://127.0.0.1:6379",
+);
+redisClient.on("error", (err) => {
+  logger.error("Redis connection error: %o", err);
+});
 
 const rateLimitOption = createRateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs
+  max: 100, // limit each IP to 100 requests per windowMs
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   handler: (req, res) => {
@@ -40,9 +37,9 @@ const rateLimitOption = createRateLimit({
         "Too many requests from this IP, please try again after 15 minutes",
     });
   },
-  //   store: new RedisStore({
-  //     sendCommand: (...args) => redisClient.sendCommand(args),
-  //   }),
+  store: new RedisStore({
+    sendCommand: (command, ...args) => redisClient.call(command, ...args),
+  }),
 });
 
 app.use(rateLimitOption);

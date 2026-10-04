@@ -21,8 +21,13 @@ mongoose
     logger.error("Error connecting to MongoDB: %o", err);
   });
 
-//connect to Redis
-// const redisClient = new Redis(process.env.REDIS_URL);
+// Connect to Redis
+const redisClient = new Redis(
+  process.env.REDIS_URL || "redis://127.0.0.1:6379",
+);
+redisClient.on("error", (err) => {
+  logger.error("Redis connection error: %o", err);
+});
 
 // Middleware
 app.use(cors());
@@ -40,7 +45,7 @@ app.use((req, res, next) => {
 app.use(
   "/api/posts",
   (req, res, next) => {
-    // req.redisClient = redisClient;
+    req.redisClient = redisClient;
     next();
   },
   postRoutes,
