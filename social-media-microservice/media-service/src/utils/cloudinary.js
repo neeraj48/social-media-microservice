@@ -10,18 +10,31 @@ cloudinary.v2.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadMediaFile = async (file) => {
-  try {
-    const uploadRes = await cloudinary.v2.uploader.upload_stream(file, {
-      resource_type: "auto",
-    });
-    return uploadRes;
-  } catch (error) {
-    logger.error("Error uploading media file:", error);
-    throw error;
-  }
-};
+const uploadMediaFile = (file) =>
+  new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.v2.uploader.upload_stream(
+      { resource_type: "auto" },
+      (error, result) => {
+        if (error) {
+          logger.error("Error uploading media file:", error);
+          reject(error);
+          return;
+        }
+        if (!result) {
+          const resultError = new Error("Cloudinary returned no upload result");
+          logger.error("Error uploading media file:", resultError);
+          reject(resultError);
+          return;
+        }
+        resolve(result);
+      },
+    );
 
-module.exports = {
-  uploadMediaFile,
-};
+    uploadStream.on("error", (error) => {
+      logger.error("Error uploading media file:", error);
+      reject(error);
+    });
+    uploadStream.end(file.buffer);
+  });
+
+export { uploadMediaFile };
