@@ -93,7 +93,7 @@ const loginUser = async (req, res) => {
 
 // refresh token controller
 const refreshTokenUser = async (req, res) => {
-  logger.info("Refreshing token end hit..", refreshToken);
+  logger.info("Refreshing token endpoint hit");
   try {
     const { refreshToken } = req.body;
     if (!refreshToken) {

@@ -6,9 +6,9 @@ async function invalidPostCache(req, input) {
   const cacheKey = `post_${input}`;
   await req.redisClient.get(cacheKey);
   
-  const key = await req.redisClient.keys("posts:*");
-  if (key) {
-    await req.redisClient.del(key);
+  const keys = await req.redisClient.keys("posts:*");
+  if (keys.length > 0) {
+    await req.redisClient.del(...keys);
     logger.info("Invalidated post cache due to %s", input);
   }
 }

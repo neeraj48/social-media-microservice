@@ -1,6 +1,10 @@
 import express from "express";
 import { authenticateRequest } from "../middleware/authMiddleware.js";
-import { createPost, getAllPosts, getPostById } from "../contollers/post-controller.js";
+import {
+  createPost,
+  getAllPosts,
+  getPostById,
+} from "../contollers/post-controller.js";
 
 const router = express.Router();
 
