@@ -1,11 +1,12 @@
 import logger from "../utils/logger.js";
 import Post from "../models/Post.js";
 import { validateCreatePost } from "../utils/validation.js";
+import { publishToRabbitMQ } from "../utils/rabbitmq.js";
 
 async function invalidPostCache(req, input) {
   const cacheKey = `post_${input}`;
   await req.redisClient.get(cacheKey);
-  
+
   const keys = await req.redisClient.keys("posts:*");
   if (keys.length > 0) {
     await req.redisClient.del(...keys);
@@ -62,7 +63,11 @@ const getAllPosts = async (req, res) => {
       );
       return res
         .status(200)
-        .json({ success: true, data: JSON.parse(cachedPosts) });
+        .json({
+          success: true,
+          data: JSON.parse(cachedPosts),
+          total: totalPosts,
+        });
     }
     const posts = await Post.find()
       .sort({ createdAt: -1 })
@@ -117,6 +122,14 @@ const deletePost = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Post not found" });
     }
+
+    //publish post delete event to RabbitMQ
+    await publishToRabbitMQ("post.deleted", {
+      postId: post._id.toString(),
+      userId: post.user.toString(),
+      mediaIds: post.mediaIds,
+    });
+
     logger.info("Post deleted by ID: %s", id);
     await invalidPostCache(req, id);
     res

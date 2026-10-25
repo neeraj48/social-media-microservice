@@ -6,6 +6,11 @@ import cors from "cors";
 import helmet from "helmet";
 import errorHandler from "./middleware/errorHandler.js";
 import mediaRoutes from "./routes/media-routes.js";
+import {
+  connectToRabbitMQ,
+  consumeFromRabbitMQ,
+} from "./utils/rabbitmq.js";
+import handlePostDeletedEvent from "./eventHandler/media-event-handlers.js";
 
 const app = express();
 const PORT = process.env.PORT || 3003;
@@ -36,10 +41,29 @@ app.use("/api/media", mediaRoutes);
 
 app.use(errorHandler);
 
+async function startServer() {
+  try {
+    // Connect to RabbitMQ
+    await connectToRabbitMQ();
+
+    //consume messages from RabbitMQ
+    await consumeFromRabbitMQ("post.deleted", handlePostDeletedEvent);
+
+    app.listen(PORT, () => {
+      logger.info(`Media service is running on port ${PORT}`);
+    });
+  } catch (error) {
+    logger.error("Error starting the server: %o", error);
+    process.exit(1); // Exit the process with an error code
+  }
+}
+
+startServer();
+
 // Start the server
-app.listen(PORT, () => {
-  logger.info(`Media service is running on port ${PORT}`);
-});
+// app.listen(PORT, () => {
+//   logger.info(`Media service is running on port ${PORT}`);
+// });
 
 //unhandled promise rejection
 process.on("unhandledRejection", (reason, promise) => {

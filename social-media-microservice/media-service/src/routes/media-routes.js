@@ -1,6 +1,6 @@
 import express from "express";
 import Multer from "multer";
-import { uploadMedia } from "../contollers/media-controller.js";
+import { uploadMedia, getAllMedia } from "../contollers/media-controller.js";
 import { authenticateRequest } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -41,5 +41,7 @@ router.post(
   },
   uploadMedia,
 );
+
+router.get("/getAllFiles", authenticateRequest, getAllMedia);
 
 export default router;

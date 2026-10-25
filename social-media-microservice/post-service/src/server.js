@@ -7,6 +7,7 @@ import helmet from "helmet";
 import errorHandler from "./middleware/errorHandler.js";
 import logger from "./utils/logger.js";
 import postRoutes from "./routes/post-routes.js";
+import { connectToRabbitMQ } from "./utils/rabbitmq.js";
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -54,10 +55,25 @@ app.use(
 // Error handling middleware
 app.use(errorHandler);
 
+async function startServer() {
+  try {
+    // Connect to RabbitMQ
+    await connectToRabbitMQ();
+    app.listen(PORT, () => {
+      logger.info(`Post service is running on port ${PORT}`);
+    });
+  } catch (error) {
+    logger.error("Error starting the server: %o", error);
+    process.exit(1); // Exit the process with an error code
+  }
+}
+
+startServer();
+
 // Start the server
-app.listen(PORT, () => {
-  logger.info(`Post service is running on port ${PORT}`);
-});
+// app.listen(PORT, () => {
+//   logger.info(`Post service is running on port ${PORT}`);
+// });
 
 //unhandled promise rejection
 process.on("unhandledRejection", (reason, promise) => {
