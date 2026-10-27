@@ -54,20 +54,19 @@ const getAllPosts = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const startIndex = (page - 1) * limit;
 
-    const cacheKey = `posts_page_${page}_limit_${limit}`;
+    const cacheKey = `posts:page:${page}:limit:${limit}`;
     const cachedPosts = await req.redisClient.get(cacheKey);
     if (cachedPosts) {
+      const totalPosts = await Post.countDocuments();
       logger.info(
         "Retrieved posts from cache, count: %d",
         JSON.parse(cachedPosts).length,
       );
-      return res
-        .status(200)
-        .json({
-          success: true,
-          data: JSON.parse(cachedPosts),
-          total: totalPosts,
-        });
+      return res.status(200).json({
+        success: true,
+        data: JSON.parse(cachedPosts),
+        total: totalPosts,
+      });
     }
     const posts = await Post.find()
       .sort({ createdAt: -1 })
