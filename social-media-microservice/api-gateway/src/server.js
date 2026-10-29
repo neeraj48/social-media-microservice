@@ -125,6 +125,26 @@ app.use(
   }),
 );
 
+//setting proxy for search service
+app.use(
+  "/v1/search",
+  validateToken,
+  proxy(process.env.SEARCH_SERVICE_URL, {
+    ...proxyOptions,
+    proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+      proxyReqOpts.headers["content-Type"] = "application/json";
+      proxyReqOpts.headers["x-user-id"] = srcReq?.user?.userId;
+      return proxyReqOpts;
+    },
+    userReqDecorator: (proxyReq, proxyReqData, userReq, userRes) => {
+      logger.info(
+        `Proxying request to post service: ${proxyReq.method} ${userReq.originalUrl}`,
+      );
+      return proxyReqData;
+    },
+  }),
+);
+
 app.use(errorHandler);
 
 app.listen(PORT, () => {

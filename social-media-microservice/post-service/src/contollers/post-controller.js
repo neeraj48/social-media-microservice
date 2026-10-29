@@ -34,6 +34,14 @@ const createPost = async (req, res) => {
       mediaIds: mediaIds || [],
     });
     await newlyCreatedPost.save();
+
+    await publishToRabbitMQ("post.created", {
+      postId: newlyCreatedPost._id.toString(),
+      userId: newlyCreatedPost.user.toString(),
+      content: newlyCreatedPost.content,
+      createdAt: newlyCreatedPost.createdAt,
+    });
+
     await invalidPostCache(req, newlyCreatedPost._id.toString());
     logger.info("Post created for user: %s", req.user.userId);
     res.status(201).json({
