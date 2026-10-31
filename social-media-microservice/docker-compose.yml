@@ -4,67 +4,71 @@ services:
   api-gateway:
     build: ./api-gateway
     ports:
-      - "3000 3000"
-    env-file: ./api-gateway/.env
-    depndes_on:
+      - "3000:3000"
+    env_file: ./api-gateway/.env
+    depends_on:
       - redis
       - rabbitmq
     environment:
-      - REDIS_URL=redis://127.0.0.1:6379
-      - RABBITMQ_URL=amqp://localhost:5672
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - IDENTITY_SERVICE_URL=http://identity-service:3001
+      - POST_SERVICE_URL=http://post-service:3002
+      - MEDIA_SERVICE_URL=http://media-service:3003
+      - SEARCH_SERVICE_URL=http://search-service:3004
 
   identity-service:
     build: ./identity-service
-    env-file: ./identity-service/.env
-    depndes_on:
+    env_file: ./identity-service/.env
+    depends_on:
       - redis
       - rabbitmq
     environment:
-      - REDIS_URL=redis://127.0.0.1:6379
-      - RABBITMQ_URL=amqp://localhost:5672
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://rabbitmq:5672
 
   media-service:
     build: ./media-service
-    env-file: ./media-service/.env
-    depndes_on:
+    env_file: ./media-service/.env
+    depends_on:
       - redis
       - rabbitmq
     environment:
-      - REDIS_URL=redis://127.0.0.1:6379
-      - RABBITMQ_URL=amqp://localhost:5672
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://rabbitmq:5672
 
   post-service:
     build: ./post-service
-    env-file: ./post-service/.env
-    depndes_on:
+    env_file: ./post-service/.env
+    depends_on:
       - redis
       - rabbitmq
     environment:
-      - REDIS_URL=redis://127.0.0.1:6379
-      - RABBITMQ_URL=amqp://localhost:5672
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://rabbitmq:5672
 
   search-service:
     build: ./search-service
-    env-file: ./search-service/.env
-    depndes_on:
+    env_file: ./search-service/.env
+    depends_on:
       - redis
       - rabbitmq
     environment:
-      - REDIS_URL=redis://127.0.0.1:6379
-      - RABBITMQ_URL=amqp://localhost:5672
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://rabbitmq:5672
 
-redis:
-  image: redis:alpine
-  ports:
-    - "6379 6379"
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
 
-rabbitmq:
-  image: rabbitmq:3-management
-  ports:
-    - "5672 5672"
-    - "15672 15672"
-  healthcheck:
-    test: [ "CMD", "rabbitmq-diagnostic", "-q", "ping" ]
-    interval: 30s
-    timeout: 10s
-    retries: 5
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostic", "-q", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5

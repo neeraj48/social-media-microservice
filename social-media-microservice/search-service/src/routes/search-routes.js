@@ -1,6 +1,6 @@
 import express from "express";
 import { searchPostCtrl } from "../contollers/search-controller.js";
-import { authenticateRequest } from "../../../media-service/src/middleware/authMiddleware.js";
+import { authenticateRequest } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 

@@ -1,10 +1,10 @@
-FROM node:18-alpine
+FROM node:22-alpine
 
 WORKDIR /use/src/app
 
-COPY packege*.json ./
+COPY package*.json ./
 
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 COPY . .
 
