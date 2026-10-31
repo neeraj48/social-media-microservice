@@ -1,0 +1,70 @@
+version: "3.8"
+
+services:
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "3000 3000"
+    env-file: ./api-gateway/.env
+    depndes_on:
+      - redis
+      - rabbitmq
+    environment:
+      - REDIS_URL=redis://127.0.0.1:6379
+      - RABBITMQ_URL=amqp://localhost:5672
+
+  identity-service:
+    build: ./identity-service
+    env-file: ./identity-service/.env
+    depndes_on:
+      - redis
+      - rabbitmq
+    environment:
+      - REDIS_URL=redis://127.0.0.1:6379
+      - RABBITMQ_URL=amqp://localhost:5672
+
+  media-service:
+    build: ./media-service
+    env-file: ./media-service/.env
+    depndes_on:
+      - redis
+      - rabbitmq
+    environment:
+      - REDIS_URL=redis://127.0.0.1:6379
+      - RABBITMQ_URL=amqp://localhost:5672
+
+  post-service:
+    build: ./post-service
+    env-file: ./post-service/.env
+    depndes_on:
+      - redis
+      - rabbitmq
+    environment:
+      - REDIS_URL=redis://127.0.0.1:6379
+      - RABBITMQ_URL=amqp://localhost:5672
+
+  search-service:
+    build: ./search-service
+    env-file: ./search-service/.env
+    depndes_on:
+      - redis
+      - rabbitmq
+    environment:
+      - REDIS_URL=redis://127.0.0.1:6379
+      - RABBITMQ_URL=amqp://localhost:5672
+
+redis:
+  image: redis:alpine
+  ports:
+    - "6379 6379"
+
+rabbitmq:
+  image: rabbitmq:3-management
+  ports:
+    - "5672 5672"
+    - "15672 15672"
+  healthcheck:
+    test: [ "CMD", "rabbitmq-diagnostic", "-q", "ping" ]
+    interval: 30s
+    timeout: 10s
+    retries: 5
