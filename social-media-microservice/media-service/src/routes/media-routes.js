@@ -2,6 +2,7 @@ import express from "express";
 import Multer from "multer";
 import { uploadMedia, getAllMedia } from "../contollers/media-controller.js";
 import { authenticateRequest } from "../middleware/authMiddleware.js";
+import logger from "../utils/logger.js";
 
 const router = express.Router();
 
@@ -20,22 +21,23 @@ router.post(
     uploadMulter(req, res, function (err) {
       if (err instanceof Multer.MulterError) {
         logger.error("Multer error while uploading file:", err);
-        res.status(400).json({
+        return res.status(400).json({
           message: "Multer error while uploading file",
           error: err.message,
           stack: err.stack,
         });
       } else if (err) {
         logger.error("Unknown error while uploading file:", err);
-        res.status(500).json({
+        return res.status(500).json({
           message: "Unknown error while uploading file",
           error: err.message,
           stack: err.stack,
         });
       } else if (!req.file) {
         logger.error("No file uploaded");
-        res.status(400).json({ message: "No file uploaded" });
+        return res.status(400).json({ message: "No file uploaded" });
       }
+      logger.info("Parsed multipart fields: %o", req.body);
       next();
     });
   },
