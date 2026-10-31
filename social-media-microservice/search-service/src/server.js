@@ -7,11 +7,11 @@ import errorHandler from "./middleware/errorHandler.js";
 import logger from "./utils/logger.js";
 import Redis from "ioredis";
 import { searchRoutes } from "./routes/search-routes.js";
+import { connectToRabbitMQ, consumeFromRabbitMQ } from "./utils/rabbitmq.js";
 import {
-  connectToRabbitMQ,
-  consumeFromRabbitMQ,
-} from "./utils/rabbitmq.js";
-import { handlePostCreated } from "./eventHandlers/search-event-handlers.js";
+  handlePostCreated,
+  handleDeletePost,
+} from "./eventHandlers/search-event-handlers.js";
 
 const app = express();
 const PORT = process.env.PORT || 3004;
@@ -42,6 +42,7 @@ async function startServer() {
   try {
     await connectToRabbitMQ();
     await consumeFromRabbitMQ("post.created", handlePostCreated);
+    await consumeFromRabbitMQ("post.deleted", handleDeletePost);
     app.listen(PORT, () => {
       logger.info(`Search service is running on port ${PORT}`);
     });

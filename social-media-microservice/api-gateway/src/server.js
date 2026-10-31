@@ -158,5 +158,8 @@ app.listen(PORT, () => {
   logger.info(
     `Media service running on port at ${process.env.MEDIA_SERVICE_URL}`,
   );
+  logger.info(
+    `Search service running on port at ${process.env.SEARCH_SERVICE_URL}`,
+  );
   logger.info(`Redis URL: ${process.env.REDIS_URL}`);
 });

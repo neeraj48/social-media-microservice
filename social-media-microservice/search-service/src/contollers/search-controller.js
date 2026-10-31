@@ -5,8 +5,15 @@ const searchPostCtrl = async (req, res, next) => {
   logger.info("search endpoint hiting...");
   try {
     const { query } = req.query;
+    if (typeof query !== "string" || !query.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "A search query is required",
+      });
+    }
+
     const result = await Search.find(
-      { $text: { $query: query } },
+      { $text: { $search: query.trim() } },
       { score: { $meta: "textScore" } },
     )
       .sort({ score: { $meta: "textScore" } })
