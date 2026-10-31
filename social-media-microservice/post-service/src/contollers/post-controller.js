@@ -28,6 +28,34 @@ const createPost = async (req, res) => {
         .json({ success: false, message: error.details[0].message });
     }
     const { content, mediaIds } = req.body;
+    if (mediaIds?.length) {
+      const mediaServiceUrl =
+        process.env.MEDIA_SERVICE_URL || "http://localhost:3003";
+      const ownershipResponse = await fetch(
+        `${mediaServiceUrl}/api/media/validate-ownership`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-user-id": req.user.userId,
+          },
+          body: JSON.stringify({ mediaIds }),
+        },
+      );
+      if (!ownershipResponse.ok) {
+        throw new Error(
+          `Media ownership validation failed with status ${ownershipResponse.status}`,
+        );
+      }
+      const { owned } = await ownershipResponse.json();
+      if (!owned) {
+        return res.status(403).json({
+          success: false,
+          message: "Post crated succesfully and All attached media must belong to you",
+        });
+      }
+    }
+
     const newlyCreatedPost = new Post({
       user: req.user.userId,
       content,
@@ -122,7 +150,10 @@ const deletePost = async (req, res) => {
   logger.info("Deleting post by ID: %s", req.params.id);
   try {
     const { id } = req.params;
-    const post = await Post.findByIdAndDelete(id);
+    const post = await Post.findOneAndDelete({
+      _id: id,
+      user: req.user.userId,
+    });
     if (!post) {
       logger.warn("Post not found for ID: %s", id);
       return res

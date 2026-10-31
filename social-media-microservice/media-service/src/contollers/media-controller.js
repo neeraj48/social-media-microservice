@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import logger from "../utils/logger.js";
 import Media from "../models/Media.js";
 import { uploadMediaFile } from "../utils/cloudinary.js";
@@ -21,6 +22,7 @@ const uploadMedia = async (req, res) => {
     );
     const newMedia = new Media({
       publicId: uploadResult.public_id,
+      mediaId: randomBytes(32).toString("hex"),
       originalName: originalname,
       minetype: mimetype,
       url: uploadResult.secure_url,
@@ -31,7 +33,7 @@ const uploadMedia = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "File uploaded successfully",
-      mediaId: newMedia._id,
+      mediaId: newMedia.mediaId,
       data: uploadResult,
     });
   } catch (error) {
@@ -45,7 +47,7 @@ const uploadMedia = async (req, res) => {
 
 const getAllMedia = async (req, res) => {
   try {
-    const result = await Media.find();
+    const result = await Media.find({ userId: req.user.userId });
     logger.info("Media fetched successfully");
     return res.status(200).json({
       success: true,
@@ -61,4 +63,52 @@ const getAllMedia = async (req, res) => {
   }
 };
 
-export { uploadMedia, getAllMedia };
+const validateMediaOwnership = async (req, res) => {
+  const { mediaIds } = req.body;
+  if (
+    !Array.isArray(mediaIds) ||
+    mediaIds.length > 20 ||
+    mediaIds.some(
+      (id) => typeof id !== "string" || id.length < 10 || id.length > 100,
+    ) ||
+    new Set(mediaIds).size !== mediaIds.length
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "mediaIds must contain up to 20 unique IDs, each 10-100 characters",
+    });
+  }
+
+  try {
+    const legacyObjectIds = mediaIds.filter((id) => /^[a-f\d]{24}$/i.test(id));
+    const ownedMedia = await Media.find({
+      userId: req.user.userId,
+      $or: [
+        { mediaId: { $in: mediaIds } },
+        { _id: { $in: legacyObjectIds } },
+      ],
+    })
+      .select("mediaId _id")
+      .lean();
+    const ownedIds = new Set(
+      ownedMedia.flatMap((media) => [media.mediaId, media._id.toString()]),
+    );
+    return res
+      .status(200)
+      .json({
+        owned: mediaIds.every(
+          (id) =>
+            ownedIds.has(id) ||
+            (/^[a-f\d]{24}$/i.test(id) && ownedIds.has(id.toLowerCase())),
+        ),
+      });
+  } catch (error) {
+    logger.error("Error validating media ownership: %o", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to validate media ownership",
+    });
+  }
+};
+
+export { uploadMedia, getAllMedia, validateMediaOwnership };

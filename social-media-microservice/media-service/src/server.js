@@ -8,7 +8,6 @@ import errorHandler from "./middleware/errorHandler.js";
 import mediaRoutes from "./routes/media-routes.js";
 import { connectToRabbitMQ, consumeFromRabbitMQ } from "./utils/rabbitmq.js";
 import handlePostDeletedEvent from "./eventHandler/media-event-handlers.js";
-import rateLimit, { rateLimit as createRateLimit } from "express-rate-limit";
 
 const app = express();
 const PORT = process.env.PORT || 3003;
@@ -38,26 +37,8 @@ app.use((req, res, next) => {
   next();
 });
 
-const mediaRateLimit = createRateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 100,
-  // keyGenerator: (req) => req.user.userId,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    logger.warn("Media API rate limit exceeded for user: %s", req.user.userId);
-    res.status(429).json({
-      success: false,
-      message:
-        "Too many media API requests. Please try again after 15 minutes.",
-    });
-  },
-});
-
-const apiRateLimti = rateLimit(mediaRateLimit);
-
 // Routes
-app.use("/api/media", mediaRoutes, apiRateLimti);
+app.use("/api/media", mediaRoutes);
 
 app.use(errorHandler);
 

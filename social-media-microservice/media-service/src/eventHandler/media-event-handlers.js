@@ -4,8 +4,23 @@ import logger from "../utils/logger.js";
 
 const handlePostDeletedEvent = async (eventData) => {
   try {
-    const { postId, mediaIds } = eventData;
-    const mediaToDelete = await Media.find({ _id: { $in: mediaIds } });
+    const { postId, userId, mediaIds } = eventData;
+    if (!userId || !Array.isArray(mediaIds)) {
+      logger.error("Invalid post.deleted event; refusing media deletion: %o", {
+        postId,
+      });
+      return;
+    }
+    const legacyObjectIds = mediaIds.filter(
+      (id) => typeof id === "string" && /^[a-f\d]{24}$/i.test(id),
+    );
+    const mediaToDelete = await Media.find({
+      userId,
+      $or: [
+        { mediaId: { $in: mediaIds } },
+        { _id: { $in: legacyObjectIds } },
+      ],
+    });
     for (const media of mediaToDelete) {
       await deleteMediaFile(media.publicId);
       await Media.findByIdAndDelete(media._id);

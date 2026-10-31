@@ -1,10 +1,32 @@
 import express from "express";
 import Multer from "multer";
-import { uploadMedia, getAllMedia } from "../contollers/media-controller.js";
+import { rateLimit } from "express-rate-limit";
+import {
+  uploadMedia,
+  getAllMedia,
+  validateMediaOwnership,
+} from "../contollers/media-controller.js";
 import { authenticateRequest } from "../middleware/authMiddleware.js";
 import logger from "../utils/logger.js";
 
 const router = express.Router();
+
+const mediaRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 100,
+  keyGenerator: (req) => req.user.userId,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logger.warn("Media API rate limit exceeded for user: %s", req.user.userId);
+    res.status(429).json({
+      success: false,
+      message: "Too many media API requests. Please try again after 15 minutes.",
+    });
+  },
+});
+
+router.use(authenticateRequest, mediaRateLimit);
 
 //configure multer for file upload
 const uploadMulter = Multer({
@@ -16,7 +38,6 @@ const uploadMulter = Multer({
 
 router.post(
   "/upload",
-  authenticateRequest,
   (req, res, next) => {
     uploadMulter(req, res, function (err) {
       if (err instanceof Multer.MulterError) {
@@ -44,6 +65,7 @@ router.post(
   uploadMedia,
 );
 
-router.get("/getAllFiles", authenticateRequest, getAllMedia);
+router.get("/getAllFiles", getAllMedia);
+router.post("/validate-ownership", validateMediaOwnership);
 
 export default router;

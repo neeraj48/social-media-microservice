@@ -106,7 +106,7 @@ const refreshTokenUser = async (req, res) => {
     const storedToken = await RefreshToken.findOne({ token: refreshToken });
 
     if (!storedToken || storedToken.expiresAt < new Date()) {
-      logger.warn("Invalid or expired refresh token: %s", refreshToken);
+      logger.warn("Invalid or expired refresh token");
       return res.status(400).json({
         success: false,
         message: "Invalid or expired refresh token",
@@ -115,7 +115,7 @@ const refreshTokenUser = async (req, res) => {
 
     const user = await User.findById(storedToken.userId);
     if (!user) {
-      logger.warn("User not found", refreshToken);
+      logger.warn("User not found for refresh token");
       return res.status(404).json({
         success: false,
         message: "User not found",
@@ -126,7 +126,7 @@ const refreshTokenUser = async (req, res) => {
       await generateToken(user);
 
     await RefreshToken.deleteOne({ token: refreshToken });
-    logger.info("Old refresh token deleted: %s", refreshToken);
+    logger.info("Old refresh token deleted");
 
     logger.info("Token refreshed successfully for user: %s", user._id);
     res.status(200).json({
@@ -143,7 +143,7 @@ const refreshTokenUser = async (req, res) => {
 
 //logout user controller
 const logoutUser = async (req, res) => {
-  logger.info("Logging out endpoint hit...", req.body.refreshToken);
+  logger.info("Logging out endpoint hit");
   try {
     const { refreshToken } = req.body;
     if (!refreshToken) {
@@ -163,10 +163,7 @@ const logoutUser = async (req, res) => {
     }
 
     await RefreshToken.deleteOne({ token: refreshToken });
-    logger.info(
-      "User logged out successfully with refresh token: %s",
-      refreshToken,
-    );
+    logger.info("User logged out successfully");
     res.status(200).json({
       success: true,
       message: "User logged out successfully",

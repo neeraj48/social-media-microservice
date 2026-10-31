@@ -5,14 +5,12 @@ import cors from "cors";
 import helmet from "helmet";
 import errorHandler from "./middleware/errorHandler.js";
 import logger from "./utils/logger.js";
-import Redis from "ioredis";
 import { searchRoutes } from "./routes/search-routes.js";
 import { connectToRabbitMQ, consumeFromRabbitMQ } from "./utils/rabbitmq.js";
 import {
   handlePostCreated,
   handleDeletePost,
 } from "./eventHandlers/search-event-handlers.js";
-import rateLimit, { rateLimit as createRateLimit } from "express-rate-limit";
 
 const app = express();
 const PORT = process.env.PORT || 3004;
@@ -34,24 +32,6 @@ app.use((req, res, next) => {
   logger.info("Request body: %o", req.body);
   next();
 });
-
-const searchRateLimit = createRateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 100,
-  keyGenerator: (req) => req.user.userId,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    logger.warn("Media API rate limit exceeded for user: %s", req.user.userId);
-    res.status(429).json({
-      success: false,
-      message:
-        "Too many media API requests. Please try again after 15 minutes.",
-    });
-  },
-});
-
-const apiRateLimti = rateLimit(searchRateLimit);
 
 app.use("/api/search", searchRoutes);
 

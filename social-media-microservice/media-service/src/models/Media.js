@@ -6,6 +6,12 @@ const mediaSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    mediaId: {
+      type: String,
+      required: true,
+      unique: true,
+      sparse: true,
+    },
     originalName: {
       type: String,
       required: true,

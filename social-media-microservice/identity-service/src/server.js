@@ -24,7 +24,6 @@ app.use(express.json());
 
 app.use((req, res, next) => {
   logger.info(`Received ${req.method} request for ${req.url}`);
-  logger.info("Request body: %o", req.body);
   next();
 });
 
